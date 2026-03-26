@@ -1,70 +1,88 @@
 pipeline {
     agent any
 
+    tools {
+        jdk 'jdk21'
+        maven 'maven3'
+    }
+
     environment {
         DOCKER_CREDENTIALS = 'dockerhub'
-        SSH_CREDENTIALS = 'build-server-ssh'
         DOCKER_IMAGE = 'devaraj74/simple-java-app'
         SONARQUBE_SERVER = 'mysonar'
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('1. Checkout') {
             steps {
-              git branch: 'main', 
-    credentialsId: 'git', 
-    url: 'https://github.com/NMIT-1NT23CS074/simple-java-devops.git'
-                
+                git branch: 'main',
+                credentialsId: 'git',
+                url: 'https://github.com/NMIT-1NT23CS074/simple-java-devops.git'
             }
         }
 
-        stage('Build') {
+        stage('2. Build') {
             steps {
                 sh 'mvn clean package'
             }
         }
 
-        stage('Test') {
+        stage('3. Test') {
             steps {
                 sh 'mvn test'
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('4. SonarQube Analysis') {
             steps {
                 withSonarQubeEnv("${SONARQUBE_SERVER}") {
-                    sh 'sonar-scanner -Dsonar.projectKey=simple-java-app -Dsonar.sources=src/main/java'
+                    sh 'mvn sonar:sonar'
                 }
             }
         }
 
-        stage('Docker Build & Push') {
+        stage('5. Quality Gate') {
             steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS}") {
-                        def appImage = docker.build("${DOCKER_IMAGE}:latest")
-                        appImage.push()
-                    }
-                }
+                waitForQualityGate abortPipeline: true
             }
         }
 
-        stage('Deploy') {
+        stage('6. OWASP Dependency Check') {
             steps {
-                sshagent(['build-server-ssh']) {
-                    sh '''
-                    ssh -o StrictHostKeyChecking=no ubuntu@44.201.194.98 "
-                    docker pull yourdockerhubusername/simple-java-app:latest &&
-                    docker stop simple-java-app || true &&
-                    docker rm simple-java-app || true &&
-                    docker run -d --name simple-java-app -p 8080:8080 devaraj74/simple-java-app:latest
-                    "
-                    '''
-                }
+                dependencyCheck additionalArguments: '--scan .'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
 
+        stage('7. Docker Build & Trivy Scan') {
+            steps {
+                sh 'docker build -t $DOCKER_IMAGE .'
+                sh 'trivy image $DOCKER_IMAGE'
+            }
+        }
+
+        stage('8. Push & Deploy') {
+    steps {
+        script {
+            docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS}") {
+                sh 'docker push $DOCKER_IMAGE'
+            }
+        }
+
+        sshagent(['build-server-ssh']) {
+            sh """
+            ssh -o StrictHostKeyChecking=no ubuntu@98.81.240.106 '
+            docker pull $DOCKER_IMAGE:latest &&
+            docker stop simple-java-app || true &&
+            docker rm simple-java-app || true &&
+            docker run -d -p 8081:8081 --name simple-java-app $DOCKER_IMAGE:latest
+            '
+            """
+        }
+    }
+}
+       
     }
 
     post {
