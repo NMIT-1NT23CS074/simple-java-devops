@@ -64,24 +64,34 @@ pipeline {
             }
         }
 
-        stage('8. Push & Deploy') {
-            steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS}") {
-                        sh 'docker push $DOCKER_IMAGE'
-                    }
-                }
+        stage('7.1 Debug Docker Image') {
+    steps {
+        sh 'docker images'          // List local images to verify $DOCKER_IMAGE exists
+        sh 'echo $DOCKER_IMAGE'     // Print the variable to confirm correct value
+    }
+}
+        
 
-                sshagent(['build-server-ssh']) {
-                    sh """
-                    ssh -o StrictHostKeyChecking=no ubuntu@54.204.116.34 '
-                    docker pull $DOCKER_IMAGE &&
-                    docker stop simple-java-app || true &&
-                    docker rm simple-java-app || true &&
-                    docker run -d --name simple-java-app $DOCKER_IMAGE
-                    '
-                    """
-                }
+     stage('8. Push & Deploy') {
+    steps {
+        script {
+            // Push to Docker Hub
+            docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS}") {
+                sh 'docker push $DOCKER_IMAGE'
+            }
+        }
+
+        sshagent(['build-server-ssh']) {
+            sh """
+            ssh -o StrictHostKeyChecking=no ubuntu@54.204.116.34 \\
+            "docker pull $DOCKER_IMAGE && \\
+             docker stop simple-java-app || true && \\
+             docker rm simple-java-app || true && \\
+             docker run -d --name simple-java-app $DOCKER_IMAGE"
+            """
+        }
+    }
+}
             }
         }
     }
