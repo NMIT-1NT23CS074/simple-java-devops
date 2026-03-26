@@ -8,7 +8,7 @@ pipeline {
 
     environment {
         DOCKER_CREDENTIALS = 'dockerhub'
-        DOCKER_IMAGE = 'devaraj74/simple-java-app'
+        DOCKER_IMAGE = 'devaraj74/simple-java-app:latest'
         SONARQUBE_SERVER = 'mysonar'
     }
 
@@ -44,45 +44,46 @@ pipeline {
 
         stage('5. Quality Gate') {
             steps {
-                waitForQualityGate abortPipeline: true
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 
-       stage('6. OWASP Dependency Check') {
-    steps {
-        dependencyCheck odcInstallation: 'odc', additionalArguments: '--scan .'
-        dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-    }
-}
+        stage('6. OWASP Dependency Check') {
+            steps {
+                dependencyCheck odcInstallation: 'odc', additionalArguments: '--scan .'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            }
+        }
 
         stage('7. Docker Build & Trivy Scan') {
             steps {
                 sh 'docker build -t $DOCKER_IMAGE .'
-                sh 'trivy image $DOCKER_IMAGE'
+                sh 'trivy image --exit-code 0 --severity HIGH,CRITICAL $DOCKER_IMAGE'
             }
         }
 
         stage('8. Push & Deploy') {
-    steps {
-        script {
-            docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS}") {
-                sh 'docker push $DOCKER_IMAGE'
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS}") {
+                        sh 'docker push $DOCKER_IMAGE'
+                    }
+                }
+
+                sshagent(['build-server-ssh']) {
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ubuntu@54.204.116.34 '
+                    docker pull $DOCKER_IMAGE &&
+                    docker stop simple-java-app || true &&
+                    docker rm simple-java-app || true &&
+                    docker run -d --name simple-java-app $DOCKER_IMAGE
+                    '
+                    """
+                }
             }
         }
-
-        sshagent(['build-server-ssh']) {
-            sh """
-            ssh -o StrictHostKeyChecking=no ubuntu@98.81.240.106 '
-            docker pull $DOCKER_IMAGE:latest &&
-            docker stop simple-java-app || true &&
-            docker rm simple-java-app || true &&
-            docker run -d -p 8081:8081 --name simple-java-app $DOCKER_IMAGE:latest
-            '
-            """
-        }
-    }
-}
-       
     }
 
     post {
