@@ -66,8 +66,8 @@ pipeline {
 
         stage('7.1 Debug Docker Image') {
     steps {
-        sh 'docker images'          // List local images to verify $DOCKER_IMAGE exists
-        sh 'echo $DOCKER_IMAGE'     // Print the variable to confirm correct value
+        sh 'docker images'         
+        sh 'echo $DOCKER_IMAGE'     
     }
 }
         
