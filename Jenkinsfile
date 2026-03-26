@@ -12,7 +12,9 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git credentialsId: 'git', url: 'https://github.com/NMIT-1NT23CS074/simple-java-devops.git'
+              git branch: 'main', 
+    credentialsId: 'git', 
+    url: 'https://github.com/NMIT-1NT23CS074/simple-java-devops.git'
                 
             }
         }
