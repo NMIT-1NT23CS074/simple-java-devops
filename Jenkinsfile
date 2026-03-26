@@ -12,7 +12,8 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                git 'https://github.com/yourusername/simple-java-devops.git'
+                git credentialsId: 'git', url: 'https://github.com/NMIT-1NT23CS074/simple-java-devops.git'
+                
             }
         }
 
