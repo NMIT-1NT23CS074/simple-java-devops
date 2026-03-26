@@ -48,12 +48,12 @@ pipeline {
             }
         }
 
-        stage('6. OWASP Dependency Check') {
-            steps {
-                dependencyCheck additionalArguments: '--scan .'
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
-        }
+       stage('6. OWASP Dependency Check') {
+    steps {
+        dependencyCheck odcInstallation: 'odc', additionalArguments: '--scan .'
+        dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+    }
+}
 
         stage('7. Docker Build & Trivy Scan') {
             steps {
