@@ -7,8 +7,8 @@ pipeline {
     }
 
     environment {
-        DOCKER_CREDENTIALS = 'dockerhub'
-        DOCKER_IMAGE = 'devaraj74/simple-java-app:latest'
+        DOCKER_CREDENTIALS = 'dockerhub'                      // Jenkins Docker credentials ID
+        DOCKER_IMAGE = 'devaraj74/simple-java-app:latest'     // Full image name with tag
         SONARQUBE_SERVER = 'mysonar'
     }
 
@@ -17,8 +17,8 @@ pipeline {
         stage('1. Checkout') {
             steps {
                 git branch: 'main',
-                credentialsId: 'git',
-                url: 'https://github.com/NMIT-1NT23CS074/simple-java-devops.git'
+                    credentialsId: 'git',
+                    url: 'https://github.com/NMIT-1NT23CS074/simple-java-devops.git'
             }
         }
 
@@ -50,12 +50,12 @@ pipeline {
             }
         }
 
-       stage('OWASP Dependency Check') {
-    steps {
-        dependencyCheck additionalArguments: '--scan .', odcInstallation: 'odc'
-        dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-    }
-}
+        stage('6. OWASP Dependency Check') {
+            steps {
+                dependencyCheck additionalArguments: '--scan .', odcInstallation: 'odc'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            }
+        }
 
         stage('7. Docker Build & Trivy Scan') {
             steps {
@@ -65,34 +65,34 @@ pipeline {
         }
 
         stage('7.1 Debug Docker Image') {
-    steps {
-        sh 'docker images'         
-        sh 'echo $DOCKER_IMAGE'     
-    }
-}
-        
-
-     stage('8. Push & Deploy') {
-    steps {
-        script {
-            // Push to Docker Hub
-            docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS}") {
-                sh 'docker push $DOCKER_IMAGE'
+            steps {
+                sh 'docker images'
+                sh 'echo $DOCKER_IMAGE'
             }
         }
 
-        sshagent(['build-server-ssh']) {
-            sh """
-            ssh -o StrictHostKeyChecking=no ubuntu@54.204.116.34 \\
-            "docker pull $DOCKER_IMAGE && \\
-             docker stop simple-java-app || true && \\
-             docker rm simple-java-app || true && \\
-             docker run -d --name simple-java-app $DOCKER_IMAGE"
-            """
+        stage('8. Push & Deploy') {
+            steps {
+                script {
+                    // Push Docker image to Docker Hub
+                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS}") {
+                        sh 'docker push $DOCKER_IMAGE'
+                    }
+                }
+
+                sshagent(['build-server-ssh']) {
+                    // Deploy on remote server via SSH
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ubuntu@54.204.116.34 \\
+                    "docker pull $DOCKER_IMAGE && \\
+                     docker stop simple-java-app || true && \\
+                     docker rm simple-java-app || true && \\
+                     docker run -d --name simple-java-app $DOCKER_IMAGE"
+                    """
+                }
+            }
         }
     }
-}
-            
 
     post {
         always {
