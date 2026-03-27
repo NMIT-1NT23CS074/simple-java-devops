@@ -51,24 +51,24 @@ pipeline {
             }
         }
 
-      stage('6. OWASP Dependency Check (Docker)') {
-    steps {
-        script {
-            docker.image('owasp/dependency-check:12.3.0').inside {
-                sh '''
-                    dependency-check.sh \
-                        --project "simple-java-app" \
-                        --scan ./target \
-                        --format "HTML" \
-                        --format "JSON" \
-                        --format "XML" \
-                        --out dependency-check-report \
-                        --nvd-api-key $NVD_API_KEY
-                '''
+        stage('6. OWASP Dependency Check (Docker)') {
+            steps {
+                script {
+                    docker.image('owasp/dependency-check:12.3.0').inside {
+                        sh '''
+                            dependency-check.sh \
+                                --project "simple-java-app" \
+                                --scan ./target \
+                                --format "HTML" \
+                                --format "JSON" \
+                                --format "XML" \
+                                --out dependency-check-report \
+                                --nvd-api-key $NVD_API_KEY
+                        '''
+                    }
+                }
             }
         }
-    }
-}
 
         stage('7. Docker Build & Trivy Scan') {
             steps {
