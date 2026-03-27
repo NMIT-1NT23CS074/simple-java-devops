@@ -51,18 +51,24 @@ pipeline {
             }
         }
 
-        stage('6. OWASP Dependency Check') {
-            steps {
-                // Using a fixed version of Dependency-Check (12.3.0) and generating HTML, JSON, XML reports
+      stage('6. OWASP Dependency Check (Docker)') {
+    steps {
+        script {
+            docker.image('owasp/dependency-check:12.3.0').inside {
                 sh '''
-                mvn org.owasp:dependency-check-maven:12.3.0:check \
-                    -Dnvd.api.key=$NVD_API_KEY \
-                    -Dformat=HTML,JSON,XML \
-                    -DfailOnError=true \
-                    -DoutputDirectory=dependency-check-report
+                    dependency-check.sh \
+                        --project "simple-java-app" \
+                        --scan ./target \
+                        --format "HTML" \
+                        --format "JSON" \
+                        --format "XML" \
+                        --out dependency-check-report \
+                        --nvd-api-key $NVD_API_KEY
                 '''
             }
         }
+    }
+}
 
         stage('7. Docker Build & Trivy Scan') {
             steps {
