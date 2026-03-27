@@ -20,7 +20,7 @@ pipeline {
                 git branch: 'main',
                     credentialsId: 'git',
                     url: 'https://github.com/NMIT-1NT23CS074/simple-java-devops.git'
-                NVD_API_KEY = credentials('nvd-api-key-id')
+
             }
         }
 
@@ -52,19 +52,19 @@ pipeline {
     }
 }
 
-  stage('6. OWASP Dependency Check') {
+stage('6. OWASP Dependency Check') {
     environment {
-        NVD_API_KEY = credentials('NVD_API_KEY') // matches your Jenkins secret ID
+        // Pull the secret from Jenkins credentials
+        NVD_API_KEY = credentials('NVD_API_KEY')
     }
     steps {
-        script {
-            sh """
-            mvn org.owasp:dependency-check-maven:check \
-                -Dnvd.api.key=${NVD_API_KEY} \
-                -Dformat=HTML \
-                -DfailOnError=true
-            """
-        }
+        // Run Maven Dependency Check
+        sh """
+        mvn org.owasp:dependency-check-maven:check \
+            -Dnvd.api.key=${NVD_API_KEY} \
+            -Dformat=HTML \
+            -DfailOnError=true
+        """
     }
 }
 
