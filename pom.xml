@@ -93,20 +93,16 @@
             </plugin>
 
             <!-- OWASP Dependency Check (SCA) -->
-<build>
-    <plugins>
-        <plugin>
-    <groupId>org.owasp</groupId>
-    <artifactId>dependency-check-maven</artifactId>
-    <version>9.0.9</version>
-    <configuration>
-        <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
-        <nvdDownloadWait>2000</nvdDownloadWait>
-        <cveValidForHours>24</cveValidForHours>
-    </configuration>
-</plugin>
-    </plugins>
-</build>
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>9.0.9</version>
+                <configuration>
+                    <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
+                    <nvdDownloadWait>2000</nvdDownloadWait>
+                    <cveValidForHours>24</cveValidForHours>
+                </configuration>
+            </plugin>
 
             <!-- SonarQube Scanner -->
             <plugin>
