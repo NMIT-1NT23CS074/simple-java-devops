@@ -93,21 +93,20 @@
             </plugin>
 
             <!-- OWASP Dependency Check (SCA) -->
-    <plugin>
+<build>
+    <plugins>
+        <plugin>
             <groupId>org.owasp</groupId>
             <artifactId>dependency-check-maven</artifactId>
             <version>9.0.9</version>
             <configuration>
-                <!-- NVD API key for permanent access -->
                 <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
-                
-                <!-- Wait time between NVD API requests (ms) -->
                 <nvdDownloadWait>2000</nvdDownloadWait>
-                
-                <!-- Optional: cache CVE info for 24 hours -->
                 <cveValidForHours>24</cveValidForHours>
             </configuration>
         </plugin>
+    </plugins>
+</build>
 
             <!-- SonarQube Scanner -->
             <plugin>
