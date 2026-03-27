@@ -6,12 +6,12 @@ pipeline {
         maven 'maven3'
     }
 
-   environment {
-    DOCKER_CREDENTIALS = 'dockerhub'                      // Jenkins Docker credentials ID
-    DOCKER_IMAGE = "devaraj74/simple-java-app:${BUILD_NUMBER}"    // Full image name with tag
-    SONARQUBE_SERVER = 'mysonar'                          // SonarQube server ID
-    NVD_API_KEY = credentials('NVD_API_KEY')              // Jenkins Secret Text ID for NVD API Key
-}
+    environment {
+        DOCKER_CREDENTIALS = 'dockerhub'                      // Jenkins Docker credentials ID
+        DOCKER_IMAGE = "devaraj74/simple-java-app:${BUILD_NUMBER}"    // Full image name with tag
+        SONARQUBE_SERVER = 'mysonar'                          // SonarQube server ID
+        NVD_API_KEY = credentials('NVD_API_KEY')              // Jenkins Secret Text ID for NVD API Key
+    }
 
     stages {
 
@@ -20,7 +20,6 @@ pipeline {
                 git branch: 'main',
                     credentialsId: 'git',
                     url: 'https://github.com/NMIT-1NT23CS074/simple-java-devops.git'
-
             }
         }
 
@@ -44,29 +43,25 @@ pipeline {
             }
         }
 
-      stage('5. Quality Gate') {
-    steps {
-        timeout(time: 10, unit: 'MINUTES') {
-            waitForQualityGate abortPipeline: true
+        stage('5. Quality Gate') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
         }
-    }
-}
 
-stage('6. OWASP Dependency Check') {
-    environment {
-        // Pull the secret from Jenkins credentials
-        NVD_API_KEY = credentials('NVD_API_KEY')
-    }
-    steps {
-        // Run Maven Dependency Check
-        sh """
-        mvn org.owasp:dependency-check-maven:check \
-            -Dnvd.api.key=${NVD_API_KEY} \
-            -Dformat=HTML \
-            -DfailOnError=true
-        """
-    }
-}
+        stage('6. OWASP Dependency Check') {
+            steps {
+                // Run Maven Dependency Check securely
+                sh '''
+                mvn org.owasp:dependency-check-maven:check \
+                    -Dnvd.api.key=$NVD_API_KEY \
+                    -Dformat=HTML \
+                    -DfailOnError=true
+                '''
+            }
+        }
 
         stage('7. Docker Build & Trivy Scan') {
             steps {
@@ -93,13 +88,14 @@ stage('6. OWASP Dependency Check') {
 
                 sshagent(['build-server-ssh']) {
                     // Deploy on remote server via SSH
-                    sh """
-                    ssh -o StrictHostKeyChecking=no ubuntu@18.234.101.52 \\
-                    "docker pull $DOCKER_IMAGE && \\
-                     docker stop simple-java-app || true && \\
-                     docker rm simple-java-app || true && \\
-                     docker run -d --name simple-java-app -p 80:8080 $DOCKER_IMAGE
-                    """
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ubuntu@18.234.101.52 "
+                        docker pull $DOCKER_IMAGE &&
+                        docker stop simple-java-app || true &&
+                        docker rm simple-java-app || true &&
+                        docker run -d --name simple-java-app -p 80:8080 $DOCKER_IMAGE
+                    "
+                    '''
                 }
             }
         }
