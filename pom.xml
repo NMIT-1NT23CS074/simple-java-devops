@@ -93,19 +93,29 @@
             </plugin>
 
             <!-- OWASP Dependency Check (SCA) -->
-            <plugin>
+   <plugin>
     <groupId>org.owasp</groupId>
     <artifactId>dependency-check-maven</artifactId>
     <version>9.0.9</version>
     <configuration>
+        <!-- Output formats -->
         <formats>
             <format>HTML</format>
             <format>JSON</format>
         </formats>
+
+        <!-- Fail build if high CVSS vulnerabilities found -->
         <failBuildOnCVSS>7</failBuildOnCVSS>
-        <!-- Add your NVD API Key here -->
-        <cveValidForHours>24</cveValidForHours>
+
+        <!-- NVD API configuration -->
         <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
+        <nvdApiUrl>https://services.nvd.nist.gov/rest/json/cves/1.0</nvdApiUrl>
+        <cveValidForHours>24</cveValidForHours>       <!-- Cache CVEs for 24 hours -->
+        <nvdDownloadWait>10</nvdDownloadWait>         <!-- Wait 10 seconds between NVD downloads -->
+
+        <!-- Optional: Use local data if API fails -->
+        <failOnError>true</failOnError>
+        <suppressionFile>dependency-check-suppressions.xml</suppressionFile>
     </configuration>
 </plugin>
 
