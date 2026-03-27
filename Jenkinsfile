@@ -52,13 +52,12 @@ pipeline {
     }
 }
 
-   stage('6.OWASP Dependency Check') {
+  stage('6. OWASP Dependency Check') {
     environment {
-        NVD_API_KEY = credentials('NVD_API_KEY') // Jenkins secret
+        NVD_API_KEY = credentials('NVD_API_KEY') // matches your Jenkins secret ID
     }
     steps {
         script {
-            // Run Maven Dependency Check with NVD API Key
             sh """
             mvn org.owasp:dependency-check-maven:check \
                 -Dnvd.api.key=${NVD_API_KEY} \
