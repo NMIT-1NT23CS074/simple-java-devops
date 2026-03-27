@@ -8,7 +8,7 @@ pipeline {
 
     environment {
         DOCKER_CREDENTIALS = 'dockerhub'                      // Jenkins Docker credentials ID
-        DOCKER_IMAGE = 'devaraj74/simple-java-app:latest'     // Full image name with tag
+        DOCKER_IMAGE = "devaraj74/simple-java-app:${BUILD_NUMBER}"    // Full image name with tag
         SONARQUBE_SERVER = 'mysonar'
     }
 
@@ -50,12 +50,11 @@ pipeline {
             }
         }
 
-        stage('6. OWASP Dependency Check') {
-            steps {
-                dependencyCheck additionalArguments: '--scan .', odcInstallation: 'odc'
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
-        }
+      stage('6. OWASP Dependency Check') {
+    steps {
+        sh 'mvn org.owasp:dependency-check-maven:check'
+    }
+}
 
         stage('7. Docker Build & Trivy Scan') {
             steps {
@@ -83,11 +82,11 @@ pipeline {
                 sshagent(['build-server-ssh']) {
                     // Deploy on remote server via SSH
                     sh """
-                    ssh -o StrictHostKeyChecking=no ubuntu@54.204.116.34 \\
+                    ssh -o StrictHostKeyChecking=no ubuntu@18.234.101.52 \\
                     "docker pull $DOCKER_IMAGE && \\
                      docker stop simple-java-app || true && \\
                      docker rm simple-java-app || true && \\
-                     docker run -d --name simple-java-app $DOCKER_IMAGE"
+                     docker run -d --name simple-java-app -p 80:8080 $DOCKER_IMAGE
                     """
                 }
             }
