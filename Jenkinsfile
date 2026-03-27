@@ -7,10 +7,10 @@ pipeline {
     }
 
     environment {
-        DOCKER_CREDENTIALS = 'dockerhub'                      // Jenkins Docker credentials ID
-        DOCKER_IMAGE = "devaraj74/simple-java-app:${BUILD_NUMBER}"    // Full image name with tag
-        SONARQUBE_SERVER = 'mysonar'                          // SonarQube server ID
-        NVD_API_KEY = credentials('NVD_API_KEY')              // Jenkins Secret Text ID for NVD API Key
+        DOCKER_CREDENTIALS = 'dockerhub'                      
+        DOCKER_IMAGE = "devaraj74/simple-java-app:${BUILD_NUMBER}"    
+        SONARQUBE_SERVER = 'mysonar'                          
+        NVD_API_KEY = credentials('NVD_API_KEY')              
     }
 
     stages {
@@ -53,12 +53,13 @@ pipeline {
 
         stage('6. OWASP Dependency Check') {
             steps {
-                // Run Maven Dependency Check securely
+                // Using a fixed version of Dependency-Check (12.3.0) and generating HTML, JSON, XML reports
                 sh '''
-                mvn org.owasp:dependency-check-maven:check \
+                mvn org.owasp:dependency-check-maven:12.3.0:check \
                     -Dnvd.api.key=$NVD_API_KEY \
-                    -Dformat=HTML \
-                    -DfailOnError=true
+                    -Dformat=HTML,JSON,XML \
+                    -DfailOnError=true \
+                    -DoutputDirectory=dependency-check-report
                 '''
             }
         }
@@ -80,14 +81,12 @@ pipeline {
         stage('8. Push & Deploy') {
             steps {
                 script {
-                    // Push Docker image to Docker Hub
                     docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS}") {
                         sh 'docker push $DOCKER_IMAGE'
                     }
                 }
 
                 sshagent(['build-server-ssh']) {
-                    // Deploy on remote server via SSH
                     sh '''
                     ssh -o StrictHostKeyChecking=no ubuntu@18.234.101.52 "
                         docker pull $DOCKER_IMAGE &&
