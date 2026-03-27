@@ -37,9 +37,9 @@ pipeline {
 
         stage('4. SonarQube Analysis') {
             steps {
-                withSonarQubeEnv("${SONARQUBE_SERVER}") {
-                    sh 'mvn clean verify sonar:sonar'
-                }
+              withSonarQubeEnv('mysonar') {
+    sh 'mvn clean verify sonar:sonar -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml'
+}
             }
         }
 
