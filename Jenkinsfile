@@ -37,9 +37,9 @@ pipeline {
 
         stage('4. SonarQube Analysis') {
             steps {
-              withSonarQubeEnv('mysonar') {
-    sh 'mvn clean verify sonar:sonar -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml'
-}
+                withSonarQubeEnv("${SONARQUBE_SERVER}") {
+                    sh 'mvn clean verify sonar:sonar -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml'
+                }
             }
         }
 
@@ -54,32 +54,34 @@ pipeline {
         stage('6. OWASP Dependency Check (Docker)') {
             steps {
                 script {
-                    docker.image('owasp/dependency-check:12.3.0').inside {
-                        sh '''
-                            dependency-check.sh \
-                                --project "simple-java-app" \
-                                --scan ./target \
-                                --format "HTML" \
-                                --format "JSON" \
-                                --format "XML" \
-                                --out dependency-check-report \
-                                --nvd-api-key $NVD_API_KEY
-                        '''
-                    }
+                    // Use sudo if Docker permission denied
+                    sh '''
+                        sudo docker run --rm -v $PWD:/src -e NVD_API_KEY=$NVD_API_KEY owasp/dependency-check:12.3.0 \
+                        --project "simple-java-app" \
+                        --scan /src/target \
+                        --format "HTML" \
+                        --format "JSON" \
+                        --format "XML" \
+                        --out /src/dependency-check-report
+                    '''
                 }
             }
         }
 
         stage('7. Docker Build & Trivy Scan') {
             steps {
-                sh 'docker build -t $DOCKER_IMAGE .'
-                sh 'trivy image --exit-code 0 --severity HIGH,CRITICAL $DOCKER_IMAGE'
+                script {
+                    // Build Docker image
+                    sh 'sudo docker build -t $DOCKER_IMAGE .'
+                    // Scan Docker image with Trivy
+                    sh 'sudo trivy image --exit-code 0 --severity HIGH,CRITICAL $DOCKER_IMAGE'
+                }
             }
         }
 
         stage('7.1 Debug Docker Image') {
             steps {
-                sh 'docker images'
+                sh 'sudo docker images'
                 sh 'echo $DOCKER_IMAGE'
             }
         }
@@ -88,17 +90,17 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS}") {
-                        sh 'docker push $DOCKER_IMAGE'
+                        sh 'sudo docker push $DOCKER_IMAGE'
                     }
                 }
 
                 sshagent(['build-server-ssh']) {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ubuntu@18.234.101.52 "
-                        docker pull $DOCKER_IMAGE &&
-                        docker stop simple-java-app || true &&
-                        docker rm simple-java-app || true &&
-                        docker run -d --name simple-java-app -p 80:8080 $DOCKER_IMAGE
+                        sudo docker pull $DOCKER_IMAGE &&
+                        sudo docker stop simple-java-app || true &&
+                        sudo docker rm simple-java-app || true &&
+                        sudo docker run -d --name simple-java-app -p 80:8080 $DOCKER_IMAGE
                     "
                     '''
                 }
