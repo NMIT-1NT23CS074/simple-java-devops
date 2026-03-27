@@ -6,11 +6,12 @@ pipeline {
         maven 'maven3'
     }
 
-    environment {
-        DOCKER_CREDENTIALS = 'dockerhub'                      // Jenkins Docker credentials ID
-        DOCKER_IMAGE = "devaraj74/simple-java-app:${BUILD_NUMBER}"    // Full image name with tag
-        SONARQUBE_SERVER = 'mysonar'
-    }
+   environment {
+    DOCKER_CREDENTIALS = 'dockerhub'                      // Jenkins Docker credentials ID
+    DOCKER_IMAGE = "devaraj74/simple-java-app:${BUILD_NUMBER}"    // Full image name with tag
+    SONARQUBE_SERVER = 'mysonar'                          // SonarQube server ID
+    NVD_API_KEY = credentials('NVD_API_KEY')              // Jenkins Secret Text ID for NVD API Key
+}
 
     stages {
 
@@ -19,6 +20,7 @@ pipeline {
                 git branch: 'main',
                     credentialsId: 'git',
                     url: 'https://github.com/NMIT-1NT23CS074/simple-java-devops.git'
+                NVD_API_KEY = credentials('nvd-api-key-id')
             }
         }
 
