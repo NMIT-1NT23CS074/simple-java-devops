@@ -30,6 +30,7 @@
         </dependency>
     </dependencies>
 
+    <!-- Corrected single build block -->
     <build>
         <plugins>
 
@@ -99,7 +100,7 @@
                 <version>9.0.9</version>
                 <configuration>
                     <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
-                    <nvdDownloadWait>2000</nvdDownloadWait>
+                    <nvdDownloadWait>6000</nvdDownloadWait> <!-- increased wait time -->
                     <cveValidForHours>24</cveValidForHours>
                 </configuration>
             </plugin>
